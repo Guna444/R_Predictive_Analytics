@@ -264,3 +264,83 @@ data2 <- data.frame(
 )
 pred2 <- predict(nb_model, data2)
 print(pred2)
+
+#23-09-24
+
+library(tm)
+# Load the dataset
+sms_data <- read.csv("spam.csv", stringsAsFactors = FALSE)
+
+# Rename columns for convenience
+colnames(sms_data) <- c("label", "text")
+
+# Convert the 'label' column to a factor
+sms_data$label <- factor(sms_data$label)
+
+# Create a corpus
+corpus <- VCorpus(VectorSource(sms_data$text))
+
+# Preprocess the text data
+corpus_clean <- tm_map(corpus, content_transformer(tolower))
+corpus_clean <- tm_map(corpus_clean, removeNumbers)
+corpus_clean <- tm_map(corpus_clean, removePunctuation)
+corpus_clean <- tm_map(corpus_clean, removeWords, stopwords())
+corpus_clean <- tm_map(corpus_clean, stripWhitespace)
+
+# Create a Document-Term Matrix
+dtm <- DocumentTermMatrix(corpus_clean)
+
+# Split the data into training and testing sets
+set.seed(123)
+train_indices <- createDataPartition(sms_data$label, p = 0.8, list = FALSE)
+train_data <- sms_data[train_indices, ]
+test_data <- sms_data[-train_indices, ]
+
+# Create a Document-Term Matrix for training and testing sets
+dtm_train <- dtm[train_indices, ]
+dtm_test <- dtm[-train_indices, ]
+
+# Convert counts to factors
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+
+train_dtm <- apply(dtm_train, 2, convert_counts)
+test_dtm <- apply(dtm_test, 2, convert_counts)
+# Train the model
+classifier <- naiveBayes(train_dtm, train_data$label)
+
+# Make predictions
+predictions <- predict(classifier, test_dtm)
+
+# Evaluate the model
+confusionMatrix(predictions, test_data$label)
+#---------------------------------------------------------------------------------------
+
+install.packages("rpart")
+library("rpart")
+data("iris")
+View(iris)
+str(iris)
+#sample(150, 110) would mean selecting 110 random
+#Elements from a population of 150 unique elements
+indexes = sample(150, 110)
+indexes
+iris_train = iris[indexes,]
+View(iris_train)
+iris_test = iris[-indexes,]
+View(iris_test)
+#The Expression Species ~Sepal.Length + Sepal.Width + Petal.Length + Petal.Width
+#is a formula used in statistical modeling and machine learning 
+#It specifies the relationship between a dependent variable
+#or outcome and independent variable (or predictors)
+target = Species ~Sepal.Length + Sepal.Width + Petal.Length + Petal.Width
+target
+#the "class" method is used when the target variable is 
+#Categorical (e.g., predicting species of flowers)
+tree = rpart(target, data = iris_train, method = "class")
+tree
+install.packages("rpart.plot")
+library("rpart.plot")
+predictions = predict(tree, iris_test,type = "class")
+predictions
